@@ -1,0 +1,3 @@
+class QuestionManagerFactory {
+    public QuestionParser
+}
