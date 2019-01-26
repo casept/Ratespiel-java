@@ -42,9 +42,6 @@ class Question {
     }
 
     public Boolean isCorrect(String answer) {
-        if (answer == correctAnswer) {
-            return true;
-        }
-        return false;
+        return answer.equals(correctAnswer);
     }
 }
