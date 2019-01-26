@@ -1,3 +1,4 @@
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -49,6 +50,7 @@ class Game {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         BoxLayout rootLayout = new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS);
         frame.getContentPane().setLayout(rootLayout);
+        frame.setMinimumSize(new Dimension(400, 200));
     }
 
     private String[] getPlayerNames() {
