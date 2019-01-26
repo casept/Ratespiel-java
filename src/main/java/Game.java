@@ -51,7 +51,11 @@ class Game {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         BoxLayout rootLayout = new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS);
         frame.getContentPane().setLayout(rootLayout);
-        frame.setMinimumSize(new Dimension(400, 200));
+        frame.setMinimumSize(new Dimension(600, 200));
+        // Set the window icon and title
+        ImageIcon icon = new ImageIcon(getClass().getResource("icon.png"));
+        frame.setIconImage(icon.getImage());
+        frame.setTitle("Ratespiel");
     }
 
     private String[] getPlayerNames() {
@@ -280,8 +284,8 @@ class Game {
         try {
             BufferedImage image = ImageIO.read(Game.class.getResourceAsStream("winner.png"));
             ImageIcon imageIcon = new ImageIcon(image);
-            JOptionPane.showMessageDialog(null, "Spieler " + winner.getName() + " hat gewonnen!", "YOU'RE WINNER!",
-                    JOptionPane.DEFAULT_OPTION, imageIcon);
+            JOptionPane.showMessageDialog(null, "Spieler " + winner.getName() + " hat gewonnen!",
+                    "YOU'RE WINNER!!!!1111!!", JOptionPane.DEFAULT_OPTION, imageIcon);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null, "Spieler " + winner.getName() + " hat gewonnen!");
         }
