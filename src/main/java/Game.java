@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -33,17 +34,17 @@ class Game {
             String name = names[i];
             playerManager.addPlayer(new Player(name));
         }
-        this.questionManager = new QuestionManager();
-        pickQuestions();
-
-    }
-
-    private void pickQuestions() {
-        for (int i = 0; i < 10000; i++) {
-            questionManager.addQuestion(new Question("Wann hat Edison die Glühbirne erfunden?",
-                    new String[] { "1860", "1900", "1879", "1840" }, "1879"));
+        InputStream questionStream;
+        try {
+            // Convert the questions file to a questions manager.
+            questionStream = Game.class.getResourceAsStream("questions.yml");
+            QuestionManagerFactory questionManagerFactory = new QuestionManagerFactory(questionStream);
+            questionManager = questionManagerFactory.getQuestionManager();
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null, e.getLocalizedMessage(), "Fragen konnten nicht geladen werden",
+                    JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
         }
-        // TODO: Parse a text file containing questions, pick some at random
     }
 
     private void createWindow() {
