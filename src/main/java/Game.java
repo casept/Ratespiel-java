@@ -20,7 +20,8 @@ import javax.swing.JTextField;
 
 class Game {
     private JFrame frame;
-    private static final int NUM_PLAYERS = 2; // only 2 players can participate according to the requirements
+    private static final int NUM_PLAYERS = 2; // Only 2 players can participate according to the requirements.
+    private static final int NUM_QUESTIONS_PER_PLAYER = 5; // Each player gets 5 questions.
     private PlayerManager playerManager;
     private QuestionManager questionManager;
 
@@ -132,12 +133,12 @@ class Game {
      **/
     public boolean playGame() {
         // Each player answers 5 questions
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < NUM_QUESTIONS_PER_PLAYER; i++) {
             // 2 Players who take turns
             for (int j = 0; j < 2; j++) {
                 Player currentPlayer = playerManager.next();
                 Question currentQuestion = questionManager.getRandomUnseenQuestion();
-                takeTurn(currentPlayer, currentQuestion, i + 1 /* Zero-indexed */, 5, false);
+                takeTurn(currentPlayer, currentQuestion, i + 1 /* Zero-indexed */, NUM_QUESTIONS_PER_PLAYER, false);
             }
         }
         // If there's a stalemate, keep posing questions in turns to each player.
