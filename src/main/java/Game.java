@@ -137,6 +137,7 @@ class Game {
             // 2 Players who take turns
             for (int j = 0; j < 2; j++) {
                 Player currentPlayer = playerManager.next();
+                checkQuestionsLeft();
                 Question currentQuestion = questionManager.getRandomUnseenQuestion();
                 takeTurn(currentPlayer, currentQuestion, i + 1 /* Zero-indexed */, NUM_QUESTIONS_PER_PLAYER, false);
             }
@@ -144,6 +145,7 @@ class Game {
         // If there's a stalemate, keep posing questions in turns to each player.
         if (playerManager.isStalemate()) {
             while (true) {
+                checkQuestionsLeft();
                 takeTurn(playerManager.next(), questionManager.getRandomUnseenQuestion(), 0,
                         0 /* Ignored by method when resolving a stalemate */, true);
                 if (!playerManager.isStalemate()) {
@@ -257,6 +259,18 @@ class Game {
 
         // Delete the question from the screen
         frame.remove(panel);
+    }
+
+    /**
+     * Tells the player there are no more questions left in the QuestionManager.
+     */
+    private void checkQuestionsLeft() {
+        if (!questionManager.hasQuestions()) {
+            JOptionPane.showMessageDialog(null,
+                    "Es sind keine Fragen mehr zur verfügung!\n Das Spiel wird jetzt beendet.", "Keine Fragen mehr",
+                    JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
     }
 
     private void congratulateWinner() {

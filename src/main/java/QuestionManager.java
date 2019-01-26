@@ -23,4 +23,7 @@ class QuestionManager {
         return question;
     }
 
+    public boolean hasQuestions() {
+        return !questions.isEmpty();
+    }
 }
