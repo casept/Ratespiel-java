@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Ratespiel-java.iml" filepath="$PROJECT_DIR$/.idea/Ratespiel-java.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Ratespiel-java.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Ratespiel-java.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Ratespiel-java.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Ratespiel-java.test.iml" />
     </modules>
   </component>
 </project>
