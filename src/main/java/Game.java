@@ -36,8 +36,8 @@ class Game {
         }
         InputStream questionStream;
         try {
-            // Convert the questions file to a questions manager.
-            questionStream = Game.class.getResourceAsStream("questions.yml");
+            // Parse the questions file to a QuestionManager.
+            questionStream = Game.class.getResourceAsStream("questions.txt" /* This file is embedded in the jar */);
             QuestionManagerFactory questionManagerFactory = new QuestionManagerFactory(questionStream);
             questionManager = questionManagerFactory.getQuestionManager();
         } catch (IOException e) {
@@ -144,25 +144,14 @@ class Game {
                 Player currentPlayer = playerManager.next();
                 checkQuestionsLeft();
                 Question currentQuestion = questionManager.getRandomUnseenQuestion();
-                takeTurn(currentPlayer, currentQuestion, i + 1 /* Zero-indexed */, NUM_QUESTIONS_PER_PLAYER, false);
-            }
-        }
-        // If there's a stalemate, keep posing questions in turns to each player.
-        if (playerManager.isStalemate()) {
-            while (true) {
-                checkQuestionsLeft();
-                takeTurn(playerManager.next(), questionManager.getRandomUnseenQuestion(), 0,
-                        0 /* Ignored by method when resolving a stalemate */, true);
-                if (!playerManager.isStalemate()) {
-                    break;
-                }
+                takeTurn(currentPlayer, currentQuestion, i + 1 /* Zero-indexed */, NUM_QUESTIONS_PER_PLAYER);
             }
         }
 
         // Crown our winner and ask whether the player wishes to play again
         congratulateWinner();
 
-        int dialogResult = JOptionPane.showConfirmDialog(null, "Neues Spiel anfangen?", "Neues Spiel",
+        int dialogResult = JOptionPane.showConfirmDialog(null, "Weiterspielen?", "Weiterspielen?",
                 JOptionPane.YES_NO_OPTION);
         if (dialogResult == JOptionPane.YES_OPTION) {
             return true;
@@ -174,40 +163,35 @@ class Game {
     /**
      * The given player takes a turn at guessing the answer to the question.
      *
-     * @param player           The player who guesses.
-     * @param question         The question to guess.
-     * @param questionNo       The index of the current question, used to display to
-     *                         how many questions remain. If the question is a
-     *                         stalemate breaker, this isn't displayed to the user.
-     * @param totalQuestions   The total amount of questions the player will be
-     *                         asked this session (without stalemate breakers). If
-     *                         the question is a stalemate breaker, this will be
-     *                         ignored.
-     * @param stalemateBreaker Tells the user whether this is a question for
-     *                         breaking a stalemate and therefore outside the
-     *                         regular amount of questions.
+     * @param player         The player who guesses.
+     * @param question       The question to guess.
+     * @param questionNo     The index of the current question, used to display to
+     *                       how many questions remain. If the question is a
+     *                       stalemate breaker, this isn't displayed to the user.
+     * @param totalQuestions The total amount of questions the player will be asked
+     *                       this session (without stalemate breakers). If the
+     *                       question is a stalemate breaker, this will be ignored.
      */
-    private void takeTurn(Player player, Question question, int questionNo, int totalQuestions,
-            boolean isStalemateBreaker) {
+    private void takeTurn(Player player, Question question, int questionNo, int totalQuestions) {
 
-        ArrayBlockingQueue<String> playersAnswer = new ArrayBlockingQueue<String>(1);
-        // This class implements the callbacks that the answer buttons call when
-        // pressed.
-        class ButtonHandler implements ActionListener {
-            // Keep track of which answer our button is for
-            String answer;
-            ArrayBlockingQueue<String> playersAnswer;
+        // Use this to make the main thread block until the callback is triggered by the
+        // player entering their answer.
+        ArrayBlockingQueue<String> playersAnswerQueue = new ArrayBlockingQueue<String>(1);
+        // This class implements the callbacks that the answer box calls.
+        class TextFieldHandler implements ActionListener {
+            ArrayBlockingQueue<String> playersAnswerQueue;
 
-            public ButtonHandler(String answer, ArrayBlockingQueue<String> playersAnswer) {
-                this.answer = answer;
-                this.playersAnswer = playersAnswer;
+            public TextFieldHandler(ArrayBlockingQueue<String> playersAnswerQueue) {
+                this.playersAnswerQueue = playersAnswerQueue;
             }
 
             @Override
             public void actionPerformed(ActionEvent e) {
+
+                JTextField eventSource = (JTextField) e.getSource();
                 // Relay the player's answer to the main thread.
                 try {
-                    playersAnswer.put(answer);
+                    playersAnswerQueue.put(eventSource.getText());
                 } catch (InterruptedException e1) {
                     /*
                      * This exception only occurs when the thread was interrupted during excecution.
@@ -227,31 +211,24 @@ class Game {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         JLabel playerNameLabel = new JLabel("Spieler \"" + player.getName() + "\" ist dran");
         JLabel questionLabel;
-        if (!isStalemateBreaker) {
-            questionLabel = new JLabel("Frage " + Integer.toString(questionNo) + "/" + Integer.toString(totalQuestions)
-                    + ": " + question.getQuestion());
-        } else {
-            questionLabel = new JLabel("Stichfrage: " + question.getQuestion());
-        }
+        questionLabel = new JLabel("Frage " + Integer.toString(questionNo) + "/" + Integer.toString(totalQuestions)
+                + ": " + question.getQuestion());
         panel.add(playerNameLabel);
         panel.add(questionLabel);
         frame.add(panel);
 
-        AlphabetIterator alphabet = new AlphabetIterator();
-        JPanel answersPanel = new JPanel(new GridLayout());
-        for (String answer : question.getAnswers()) {
-            JButton button = new JButton(Character.toString(alphabet.next()) + ": " + answer);
-            ButtonHandler buttonHandler = new ButtonHandler(answer, playersAnswer);
-            button.addActionListener(buttonHandler);
-            answersPanel.add(button);
-        }
-        panel.add(answersPanel);
+        panel.add(new JLabel("\nAntwort:"));
+        JTextField answerField = new JTextField(20);
+        TextFieldHandler textFieldHandler = new TextFieldHandler(playersAnswerQueue);
+        answerField.addActionListener(textFieldHandler);
+        panel.add(answerField);
+
         frame.setVisible(true);
 
-        // Wait for the player to pick an answer
+        // Block until the player enters an answer
         String answer;
         try {
-            answer = playersAnswer.take();
+            answer = playersAnswerQueue.take();
         } catch (InterruptedException e1) {
             return;
         }
@@ -270,6 +247,7 @@ class Game {
      * Tells the player there are no more questions left in the QuestionManager.
      */
     private void checkQuestionsLeft() {
+        // FIXME: Clarify requirement (what to do when there are no more questions?)
         if (!questionManager.hasQuestions()) {
             JOptionPane.showMessageDialog(null,
                     "Es sind keine Fragen mehr zur verfügung!\n Das Spiel wird jetzt beendet.", "Keine Fragen mehr",
@@ -280,6 +258,7 @@ class Game {
 
     private void congratulateWinner() {
         Player winner = playerManager.getWinner();
+        Player loser = playerManager.getLoser();
 
         // Show the player a nice picture for their troubles
         try {
@@ -287,7 +266,7 @@ class Game {
             ImageIcon imageIcon = new ImageIcon(image);
             JOptionPane.showMessageDialog(null, "Spieler " + winner.getName() + " hat gewonnen!",
                     "YOU'RE WINNER!!!!1111!!", JOptionPane.DEFAULT_OPTION, imageIcon);
-        } catch (IOException e) {
+        } catch (IOException e) /* Couldn't load image for some reason, shouldn't happen */ {
             JOptionPane.showMessageDialog(null, "Spieler " + winner.getName() + " hat gewonnen!");
         }
     }

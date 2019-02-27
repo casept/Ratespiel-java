@@ -1,0 +1,25 @@
+# The question file format is very simple: Each line contains a question in "", followed by an "=" and the answer in "".
+# Lines starting with "#" are comments.
+# Empty lines are ignored.
+
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"
+"Wann hat Edison die Glühbirne erfunden?"="1879"

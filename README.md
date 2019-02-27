@@ -5,6 +5,6 @@ A simple quiz game for our HS CS class.
 ## How to build and run
 
 ```shell
-./gradlew shadowJar
+./gradlew jar
 java -jar build/libs/Ratespiel-java.jar
 ```

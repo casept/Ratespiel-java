@@ -51,4 +51,12 @@ class PlayerManager implements Iterator<Player> {
         Collections.sort(playerCopy, Collections.reverseOrder());
         return playerCopy.get(0);
     }
+
+    public Player getLoser() {
+        // The cast is guaranteed to be safe.
+        @SuppressWarnings("unchecked")
+        ArrayList<Player> playerCopy = (ArrayList<Player>) players.clone();
+        Collections.sort(playerCopy);
+        return playerCopy.get(0);
+    }
 }

@@ -1,3 +1,2 @@
-Set-Location src/
-javac .\Main.java .\Game.java
-java Main
+./gradlew jar
+java -jar build/libs/Ratespiel-java.jar

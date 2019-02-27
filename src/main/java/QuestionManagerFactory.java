@@ -1,58 +1,56 @@
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.InputStreamReader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.yaml.snakeyaml.Yaml;
-
-// This factory builds a QuestionManager based on the supplied YAML stream.
+// This factory builds a QuestionManager based on the supplied question stream.
 class QuestionManagerFactory {
     QuestionManager questionManager;
+    // Cache these within the object to avoid recompiling for each line.
+    Pattern commentPattern;
+    Pattern questionPattern;
 
     public QuestionManagerFactory(InputStream input) throws IOException {
-        questionManager = new QuestionManager();
-        Yaml yaml = new Yaml();
-        // The questions.yaml file contains each question as a separate java document,
-        // so we iterate over them.
-        for (Object data : yaml.loadAll(input)) {
-            @SuppressWarnings("unchecked")
-            HashMap<String, Object> dataMap = (HashMap<String, Object>) data;
-            questionManager.addQuestion(buildQuestion(dataMap));
+
+        // Initialize regexes
+        this.commentPattern = Pattern.compile("\\s*#.*"); // Java doesn't have raw string literals, the first "\" is for
+                                                          // escaping the second.
+        this.questionPattern = Pattern.compile("\"(?<question>.+)\"=\"(?<answer>.+)\"",
+                Pattern.UNICODE_CHARACTER_CLASS);
+
+        this.questionManager = new QuestionManager();
+        // Split the document into lines and parse each one individually
+        BufferedReader br = new BufferedReader(new InputStreamReader(input, "UTF8"));
+        for (String line = br.readLine(); line != null; line = br.readLine()) {
+            line = line.replaceAll("(\\r|\\n)", ""); // Strip out all line endings, just to be safe
+            parseLine(line);
         }
     }
 
-    private Question buildQuestion(HashMap<String, Object> dataMap) {
-        // I'm too lazy to do proper error handling here.
-        // The app will just load the questions from the jar anyways, so the format
-        // should be correct.
-        // So instead, we'll just define some obviously bad default values to be shown
-        // in case something goes wrong.
-        String questionText = "ERROR";
-        String correctAnswer = "ERROR";
-        List<String> answers = new ArrayList<String>();
-
-        // Parse each of the question's entries
-        for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
-            switch ((String) entry.getKey()) {
-            case "question":
-                questionText = (String) entry.getValue();
-                break;
-
-            case "answers":
-                // @SuppressWarnings("unchecked")
-                answers = (ArrayList<String>) entry.getValue();
-                break;
-
-            case "correct_answer":
-                correctAnswer = (String) entry.getValue();
-                break;
-            }
+    private void parseLine(String line) {
+        // Use regex to check if it's a comment.
+        if (commentPattern.matcher(line).matches()) {
+            return;
+        } else if (questionPattern.matcher(line).matches()) {
+            Matcher matcher = questionPattern.matcher(line);
+            matcher.matches(); // Needed to allow using groups
+            String question = matcher.group("question");
+            String correctAnswer = matcher.group("answer");
+            this.questionManager.addQuestion(new Question(question, correctAnswer));
+        } else if (line.trim().length() == 0) /* Check for whitespace-only lines */ {
+            return;
+        } else {
+            throw new IllegalQuestionFormatException("Failed to parse line \"" + line + " \"");
         }
-        // Now that we have all the data we can construct the question object.
-        String[] answerArray = answers.toArray(new String[answers.size()]);
-        return new Question(questionText, answerArray, correctAnswer);
+
+    }
+
+    class IllegalQuestionFormatException extends RuntimeException {
+        IllegalQuestionFormatException(String msg) {
+            super(msg);
+        }
     }
 
     public QuestionManager getQuestionManager() {

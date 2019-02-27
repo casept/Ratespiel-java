@@ -1,7 +1,6 @@
 plugins {
     id 'java'
     id 'application'
-    id 'com.github.johnrengelman.shadow' version '4.0.4'
 }
 
 application {
@@ -13,12 +12,4 @@ jar {
                    'Implementation-Version': '1.0',
                    'Main-Class': 'Main'
     }
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'org.yaml:snakeyaml:1.23'
 }
