@@ -4,6 +4,7 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -149,7 +150,7 @@ class Game {
         }
 
         // Crown our winner and ask whether the player wishes to play again
-        congratulateWinner();
+        showResults();
 
         int dialogResult = JOptionPane.showConfirmDialog(null, "Weiterspielen?", "Weiterspielen?",
                 JOptionPane.YES_NO_OPTION);
@@ -236,6 +237,8 @@ class Game {
         // TODO: Tell the player whether he was correct
         if (question.isCorrect(answer)) {
             player.incrementScore();
+        } else {
+            player.decrementScore();
         }
         player.incrementQuestionsAnswered();
 
@@ -256,18 +259,36 @@ class Game {
         }
     }
 
-    private void congratulateWinner() {
+    private void showResults() {
         Player winner = playerManager.getWinner();
         Player loser = playerManager.getLoser();
 
-        // Show the player a nice picture for their troubles
+        // Show the players nice pictures for their troubles
         try {
-            BufferedImage image = ImageIO.read(Game.class.getResourceAsStream("winner.png"));
-            ImageIcon imageIcon = new ImageIcon(image);
-            JOptionPane.showMessageDialog(null, "Spieler " + winner.getName() + " hat gewonnen!",
-                    "YOU'RE WINNER!!!!1111!!", JOptionPane.DEFAULT_OPTION, imageIcon);
-        } catch (IOException e) /* Couldn't load image for some reason, shouldn't happen */ {
-            JOptionPane.showMessageDialog(null, "Spieler " + winner.getName() + " hat gewonnen!");
+            BufferedImage winImage = ImageIO.read(Game.class.getResourceAsStream("winner.png"));
+            ImageIcon winIcon = new ImageIcon(winImage);
+            BufferedImage loseImage = ImageIO.read(Game.class.getResourceAsStream("loser.jpeg"));
+            ImageIcon loseIcon = new ImageIcon(loseImage);
+
+            JPanel resultsPanel = new JPanel(new GridLayout(2, 2));
+            resultsPanel.add(new JLabel(
+                    "Spieler " + winner.getName() + " hat mit " + winner.getScore() + " Punkt(en) gewonnen!"));
+            resultsPanel.add(new JLabel(winIcon));
+            resultsPanel.add(
+                    new JLabel("Spieler " + loser.getName() + " hat mit " + loser.getScore() + " Punkt(en) verloren!"));
+            resultsPanel.add(new JLabel(loseIcon));
+
+            frame.add(resultsPanel);
+            frame.setVisible(true);
+
+        } catch (IOException e) {
+            // Couldn't load image for some reason, shouldn't happen as they're part of the
+            // jar
+            // TODO: Fallback to no images instead
+            JOptionPane.showMessageDialog(null,
+                    "Kritische Spieldateien konnten nicht geladen werden!\n Das Spiel wird jetzt beendet.",
+                    "Kritischer Fehler", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
         }
     }
 

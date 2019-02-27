@@ -38,6 +38,10 @@ class Player implements Comparable<Player> {
         this.score = this.score + 1;
     }
 
+    public void decrementScore() {
+        this.score = this.score - 1; // Negative scores are legal
+    }
+
     @Override
     public boolean equals(Object other) {
         if (other == this)
