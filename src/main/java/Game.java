@@ -4,9 +4,10 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -247,7 +248,8 @@ class Game {
     }
 
     /**
-     * Tells the player there are no more questions left in the QuestionManager.
+     * Tells the player when there are no more questions left in the
+     * QuestionManager.
      */
     private void checkQuestionsLeft() {
         // FIXME: Clarify requirement (what to do when there are no more questions?)
@@ -260,8 +262,14 @@ class Game {
     }
 
     private void showResults() {
-        Player winner = playerManager.getWinner();
-        Player loser = playerManager.getLoser();
+        System.out.println("Got this"); // TODO: Remove
+        showWinnerAndLoser();
+        showScoreboard();
+    }
+
+    private void showWinnerAndLoser() {
+        Player winner = this.playerManager.getWinner();
+        Player loser = this.playerManager.getLoser();
 
         // Show the players nice pictures for their troubles
         try {
@@ -280,15 +288,88 @@ class Game {
 
             frame.add(resultsPanel);
             frame.setVisible(true);
-
+            blockingNextBtn();
         } catch (IOException e) {
             // Couldn't load image for some reason, shouldn't happen as they're part of the
             // jar
             // TODO: Fallback to no images instead
+            e.printStackTrace();
             JOptionPane.showMessageDialog(null,
                     "Kritische Spieldateien konnten nicht geladen werden!\n Das Spiel wird jetzt beendet.",
                     "Kritischer Fehler", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
+        }
+    }
+
+    private void showScoreboard() {
+        System.out.println("Got this"); // TODO: Remove
+        try {
+            Scoreboard scoreboard = new Scoreboard(
+                    System.getProperty("user.home") + System.getProperty("file.separator") + "Ratespiel-Scores.txt");
+            Player winner = playerManager.getWinner();
+            scoreboard.addEntry(winner.getName(), winner.getScore());
+            List<ScoreboardEntry> top5 = scoreboard.getTop5();
+
+            JPanel scoreboardPanel = new JPanel(new GridLayout(2, 6));
+            scoreboardPanel.add(new JLabel("Spieler"));
+            scoreboardPanel.add(new JLabel("Punktzahl"));
+            // Iterate over the top entries and display them.
+            for (ScoreboardEntry entry : top5) {
+                scoreboardPanel.add(new JLabel(entry.getName()));
+                scoreboardPanel.add(new JLabel(Integer.toString(entry.getScore())));
+            }
+            // Places that haven't been taken yet are displayed with "-" in both rows.
+            if (top5.size() < 5) {
+                for (Integer i = 5 - top5.size(); i > 0; i--) {
+                    scoreboardPanel.add(new JLabel("-"));
+                    scoreboardPanel.add(new JLabel("-"));
+                }
+            }
+            frame.add(scoreboardPanel);
+
+            frame.setVisible(true);
+            System.out.println("Got this"); // TODO: Remove
+            blockingNextBtn();
+            System.out.println("Got this"); // TODO: Remove
+            scoreboard.save(); // Flush updated scoreboard to disk
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                    "Top 5 konnte nicht geladen werden!\n Deine Punktzahl wurde nicht gespeichert.",
+                    "Top 5 konnte nicht geladen werden", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Displays a button that the user has to press to continue execution.
+    private void blockingNextBtn() {
+        class BtnHandler implements ActionListener {
+            ArrayBlockingQueue<String> buttonPressQueue;
+
+            public BtnHandler(ArrayBlockingQueue<String> buttonPressQueue) {
+                this.buttonPressQueue = buttonPressQueue;
+            }
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    buttonPressQueue.put(""); // The exact String is irrelevant
+                } catch (InterruptedException e1) {
+                    return;
+                }
+            }
+        }
+
+        JButton btn = new JButton("Weiter");
+        ArrayBlockingQueue<String> buttonPressQueue = new ArrayBlockingQueue<String>(1);
+        btn.addActionListener(new BtnHandler(buttonPressQueue));
+        frame.add(btn);
+        frame.setVisible(true);
+
+        // Block until the button is pressed
+        try {
+            buttonPressQueue.take();
+        } catch (InterruptedException e1) {
+            return;
         }
     }
 

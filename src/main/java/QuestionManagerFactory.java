@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // This factory builds a QuestionManager based on the supplied question stream.
+// TODO: Integrate into the constructor of QuestionManager itself
 class QuestionManagerFactory {
     QuestionManager questionManager;
     // Cache these within the object to avoid recompiling for each line.
@@ -27,6 +28,7 @@ class QuestionManagerFactory {
             line = line.replaceAll("(\\r|\\n)", ""); // Strip out all line endings, just to be safe
             parseLine(line);
         }
+        input.close();
     }
 
     private void parseLine(String line) {
