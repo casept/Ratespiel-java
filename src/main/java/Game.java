@@ -4,12 +4,14 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
@@ -22,6 +24,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 class Game {
+    private Logger LOGGER = Logger.getLogger("Game");
     private JFrame frame;
     private static final int NUM_PLAYERS = 2; // Only 2 players can participate according to the requirements.
     private static final int NUM_QUESTIONS_PER_PLAYER = 5; // Each player gets 5 questions.
@@ -29,7 +32,14 @@ class Game {
     private QuestionManager questionManager;
 
     public Game() {
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setLevel(Level.ALL);
+        LOGGER.addHandler(handler);
+        LOGGER.setLevel(Level.ALL);
+        LOGGER.log(Level.INFO, "Starting new game");
+
         createWindow();
+
         this.playerManager = new PlayerManager();
         String[] names = getPlayerNames();
         for (int i = 0; i < names.length; i++) {
@@ -47,6 +57,7 @@ class Game {
                     JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
+        LOGGER.log(Level.FINE, "Game init completed");
     }
 
     private void createWindow() {
@@ -77,6 +88,7 @@ class Game {
         // requires the object it'll be part of.
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         frame.add(panel);
+        frame.setVisible(true);
 
         // Each player also gets a separate panel (makes it easier to manage placement
         // of the label)
@@ -111,7 +123,7 @@ class Game {
                     }
                 }
                 try {
-                    done.put(true);
+                    done.put(true); // Signal to the main thread that we're done
                 } catch (InterruptedException e1) {
                     // This exception only occurs when the thread was interrupted during excecution
                     // That usually happens because the user killed us, so we should pack up and
@@ -208,8 +220,6 @@ class Game {
 
         // Draw the question
         JPanel panel = new JPanel(new FlowLayout());
-        // Can't set a BoxLayout during JPanel construction, as it's constructor
-        // requires the object it'll be part of.
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         JLabel playerNameLabel = new JLabel("Spieler \"" + player.getName() + "\" ist dran");
         JLabel questionLabel;
@@ -220,11 +230,11 @@ class Game {
         frame.add(panel);
 
         panel.add(new JLabel("\nAntwort:"));
-        JTextField answerField = new JTextField(20);
+        JTextField answerField = new JTextField();
         TextFieldHandler textFieldHandler = new TextFieldHandler(playersAnswerQueue);
         answerField.addActionListener(textFieldHandler);
         panel.add(answerField);
-
+        answerField.grabFocus();
         frame.setVisible(true);
 
         // Block until the player enters an answer
@@ -243,13 +253,13 @@ class Game {
         }
         player.incrementQuestionsAnswered();
 
-        // Delete the question from the screen
         frame.remove(panel);
     }
 
     /**
      * Tells the player when there are no more questions left in the
-     * QuestionManager.
+     * QuestionManager. This should never happen when at least 10 questions are
+     * provided.
      */
     private void checkQuestionsLeft() {
         // FIXME: Clarify requirement (what to do when there are no more questions?)
@@ -262,58 +272,45 @@ class Game {
     }
 
     private void showResults() {
-        System.out.println("Got this"); // TODO: Remove
-        showWinnerAndLoser();
-        showScoreboard();
-    }
-
-    private void showWinnerAndLoser() {
         Player winner = this.playerManager.getWinner();
         Player loser = this.playerManager.getLoser();
-
-        // Show the players nice pictures for their troubles
-        try {
-            BufferedImage winImage = ImageIO.read(Game.class.getResourceAsStream("winner.png"));
-            ImageIcon winIcon = new ImageIcon(winImage);
-            BufferedImage loseImage = ImageIO.read(Game.class.getResourceAsStream("loser.jpeg"));
-            ImageIcon loseIcon = new ImageIcon(loseImage);
-
-            JPanel resultsPanel = new JPanel(new GridLayout(2, 2));
-            resultsPanel.add(new JLabel(
-                    "Spieler " + winner.getName() + " hat mit " + winner.getScore() + " Punkt(en) gewonnen!"));
-            resultsPanel.add(new JLabel(winIcon));
-            resultsPanel.add(
-                    new JLabel("Spieler " + loser.getName() + " hat mit " + loser.getScore() + " Punkt(en) verloren!"));
-            resultsPanel.add(new JLabel(loseIcon));
-
-            frame.add(resultsPanel);
-            frame.setVisible(true);
-            blockingNextBtn();
-        } catch (IOException e) {
-            // Couldn't load image for some reason, shouldn't happen as they're part of the
-            // jar
-            // TODO: Fallback to no images instead
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null,
-                    "Kritische Spieldateien konnten nicht geladen werden!\n Das Spiel wird jetzt beendet.",
-                    "Kritischer Fehler", JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
+        showWinnerAndLoser(winner, loser);
+        showScoreboard(winner, loser);
     }
 
-    private void showScoreboard() {
-        System.out.println("Got this"); // TODO: Remove
+    private void showWinnerAndLoser(Player winner, Player loser) {
+        LOGGER.log(Level.FINER, "Showing winner and loser");
+
+        // Show the players nice pictures for their troubles
+        JPanel resultsPanel = new JPanel(new GridLayout(2, 1));
+        resultsPanel.add(
+                new JLabel("Spieler " + winner.getName() + " hat mit " + winner.getScore() + " Punkt(en) gewonnen!"));
+        resultsPanel.add(
+                new JLabel("Spieler " + loser.getName() + " hat mit " + loser.getScore() + " Punkt(en) verloren!"));
+
+        frame.add(resultsPanel);
+        frame.setVisible(true);
+        blockingNextBtn();
+        frame.remove(resultsPanel);
+        LOGGER.log(Level.FINER, "Done showing winner and loser");
+    }
+
+    private void showScoreboard(Player winner, Player loser) {
+        LOGGER.log(Level.FINE, "Showing scoreboard");
         try {
+            // Load the scoreboard from $HOME/Ratespiel-Scores.txt
             Scoreboard scoreboard = new Scoreboard(
                     System.getProperty("user.home") + System.getProperty("file.separator") + "Ratespiel-Scores.txt");
-            Player winner = playerManager.getWinner();
-            scoreboard.addEntry(winner.getName(), winner.getScore());
-            List<ScoreboardEntry> top5 = scoreboard.getTop5();
 
-            JPanel scoreboardPanel = new JPanel(new GridLayout(2, 6));
+            // Add the new scores
+            scoreboard.addEntry(winner.getName(), winner.getScore());
+            scoreboard.addEntry(loser.getName(), loser.getScore());
+
+            // Display the scoreboard
+            List<ScoreboardEntry> top5 = scoreboard.getTop5();
+            JPanel scoreboardPanel = new JPanel(new GridLayout(6, 2));
             scoreboardPanel.add(new JLabel("Spieler"));
             scoreboardPanel.add(new JLabel("Punktzahl"));
-            // Iterate over the top entries and display them.
             for (ScoreboardEntry entry : top5) {
                 scoreboardPanel.add(new JLabel(entry.getName()));
                 scoreboardPanel.add(new JLabel(Integer.toString(entry.getScore())));
@@ -328,9 +325,9 @@ class Game {
             frame.add(scoreboardPanel);
 
             frame.setVisible(true);
-            System.out.println("Got this"); // TODO: Remove
             blockingNextBtn();
-            System.out.println("Got this"); // TODO: Remove
+            frame.remove(scoreboardPanel);
+            LOGGER.log(Level.FINE, "Done showing scoreboard");
             scoreboard.save(); // Flush updated scoreboard to disk
         } catch (IOException e) {
             e.printStackTrace();
@@ -342,6 +339,7 @@ class Game {
 
     // Displays a button that the user has to press to continue execution.
     private void blockingNextBtn() {
+        LOGGER.log(Level.FINER, "Waiting for user to press Next");
         class BtnHandler implements ActionListener {
             ArrayBlockingQueue<String> buttonPressQueue;
 
@@ -361,13 +359,18 @@ class Game {
 
         JButton btn = new JButton("Weiter");
         ArrayBlockingQueue<String> buttonPressQueue = new ArrayBlockingQueue<String>(1);
+        frame.setVisible(true);
         btn.addActionListener(new BtnHandler(buttonPressQueue));
         frame.add(btn);
+        frame.setVisible(true);
+        btn.requestFocus();
         frame.setVisible(true);
 
         // Block until the button is pressed
         try {
             buttonPressQueue.take();
+            frame.remove(btn);
+            LOGGER.log(Level.FINER, "User pressed Next button");
         } catch (InterruptedException e1) {
             return;
         }
